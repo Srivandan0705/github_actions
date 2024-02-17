@@ -1,0 +1,82 @@
+on:
+    workflow_dispatch:
+      inputs:
+        environment:
+          description: 'Which environment to deploy to (stage or prod)'
+          required: true
+          default: 'stage'
+        sha:
+          description: 'GIT SHA to deploy'
+          required: true
+          default: ''
+  
+name: Deploy Airdeck Player
+            
+jobs:
+    deploy-outloook-extension:
+      name: Deploy to '${{ github.event.inputs.environment }}'
+      runs-on: ubuntu-latest
+  
+      steps:
+      - name: Setup Deployment Environment
+        id: setup-environments
+        run: |
+            echo "::set-output name=aws_region::us-east-1"
+            if [[ "${{github.event.inputs.environment}}" == "prod" ]]; then
+              echo "::set-output name=deploy_bucket::player.airdeck.co"
+            else
+              echo "::set-output name=deploy_bucket::stage.player.airdeck.co"
+            fi
+  
+      - name: Checkout
+        uses: actions/checkout@v2
+        with:
+          ref: '${{ github.event.inputs.sha }}'
+  
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ steps.setup-environments.outputs.aws_region }}
+  
+      
+      - name: Configure Node
+        id: configure-node
+        uses: actions/setup-node@v3
+        with: 
+          node-version: 18.15.0
+  
+      - name: Build dist
+        id: build-dist
+        run: |
+          npm install --force
+          if [[ "${{github.event.inputs.environment}}" == "prod" ]]; then
+            npm run build:prod
+          else
+            npm run build:stage
+          fi
+
+ # Invalidate CloudFront (this action)
+      - name: Invalidate CloudFront
+        uses: chetan/invalidate-cloudfront-action@v2
+        env:
+          DISTRIBUTION: ${{ secrets.STAGE_DISTRIBUTION }}
+          PATHS: "/*"
+          AWS_REGION: ${{ steps.setup-environments.outputs.aws_region }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+  
+      - uses: shallwefootball/s3-upload-action@master
+        name: Upload S3
+        id: S3
+        with:
+          aws_key_id: ${{ secrets.AWS_KEY_ID }}
+          aws_secret_access_key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws_bucket: ${{ steps.setup-environments.outputs.deploy_bucket }}
+          source_dir: 'dist/airdeck-player'
+          destination_dir: ''
+
+          
+  
+  
