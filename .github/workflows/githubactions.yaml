@@ -1,6 +1,8 @@
-on:
-    workflow_dispatch:
-      inputs:
+on: 
+ workflow_dispatch:
+  branches:
+    -peacock
+  inputs:
         environment:
           description: 'Which environment to deploy to (stage or prod)'
           required: true
