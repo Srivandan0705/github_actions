@@ -10,7 +10,7 @@ on:
           required: true
           default: ''
   
-name: Deploy Airdeck Player
+name: Deploy GithubActions
             
 jobs:
     deploy-outloook-extension:
