@@ -23,9 +23,9 @@ jobs:
         run: |
             echo "::set-output name=aws_region::us-east-1"
             if [[ "${{github.event.inputs.environment}}" == "prod" ]]; then
-              echo "::set-output name=deploy_bucket::test"
+              echo "::set-output name=deploy_bucket::githubactions.co"
             else
-              echo "::set-output name=deploy_bucket::stage.test"
+              echo "::set-output name=deploy_bucket::stage.githubactions.co"
             fi
   
       - name: Checkout
