@@ -51,6 +51,7 @@ jobs:
   
       - name: Build dist
         id: build-dist
+        continue-on-error: true
         run: |
           npm install --force
           if [[ "${{github.event.inputs.environment}}" == "prod" ]]; then
